@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Attendance System</title>
+    <link rel="stylesheet" href="static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+            <h1>Login</h1>
+            <form id="loginForm" class="form">
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                    <span class="error-message" id="usernameError"></span>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                    <span class="error-message" id="passwordError"></span>
+                </div>
+                <button type="submit" class="btn-primary">Login</button>
+            </form>
+            <p class="form-footer">
+                Don't have an account? <a href="register.html">Register here</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // API configuration
+        const API_BASE_URL = 'http://localhost:8000';  // Update with your server IP
+
+        // Login function
+        async function login(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                console.log('Attempting to connect to:', `${API_BASE_URL}/token`);
+                const response = await fetch(`${API_BASE_URL}/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'Accept': 'application/json'
+                    },
+                    body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+                });
+                
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Login response error:', errorData);
+                    throw new Error(errorData.detail || 'Login failed');
+                }
+                
+                const data = await response.json();
+                console.log('Login successful, token received');
+                localStorage.setItem('token', data.access_token);
+                
+                // Get user info to determine role
+                console.log('Fetching user info...');
+                const userResponse = await fetch(`${API_BASE_URL}/users/me`, {
+                    headers: {
+                        'Authorization': `Bearer ${data.access_token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (!userResponse.ok) {
+                    const error = await userResponse.json();
+                    console.error('User info response error:', error);
+                    throw new Error('Failed to get user info');
+                }
+                
+                const userData = await userResponse.json();
+                console.log('User data:', userData);
+                
+                // Redirect based on role
+                if (userData.role === 'lecturer' || userData.role === 'LECTURER') {
+                    window.location.href = 'lecturer_dashboard.html';
+                } else if (userData.role === 'student' || userData.role === 'STUDENT') {
+                    window.location.href = 'student_dashboard.html';
+                } else {
+                    throw new Error('Invalid user role');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                if (error.message === 'Failed to fetch') {
+                    alert('Cannot connect to server. Please check your internet connection and try again.');
+                } else {
+                    alert('Login failed: ' + error.message);
+                }
+            }
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', login);
+    </script>
+</body>
+</html> 

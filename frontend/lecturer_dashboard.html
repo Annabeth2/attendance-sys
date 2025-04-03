@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lecturer Dashboard - Attendance System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Lecturer Dashboard</h1>
+            <div class="user-info">
+                <span id="userName"></span>
+                <button onclick="logout()">Logout</button>
+            </div>
+        </header>
+
+        <div class="dashboard-container">
+            <div class="sidebar">
+                <h2>Quick Actions</h2>
+                <div class="action-buttons">
+                    <button class="btn btn-primary" onclick="showAddUnitModal()">Add New Unit</button>
+                    <button class="btn btn-secondary" onclick="showManualAttendanceModal()">Mark Manual Attendance</button>
+                    <button class="btn btn-info" onclick="showProfileModal()">Edit Profile</button>
+            </div>
+
+                <h2>Bluetooth Attendance</h2>
+                <div class="bluetooth-section">
+                    <div class="form-group">
+                        <label for="unitSelect">Select Unit:</label>
+                        <select id="unitSelect" required>
+                            <option value="">Select a unit...</option>
+                        </select>
+                    </div>
+                    <div class="action-buttons">
+                        <button id="startBroadcastBtn" class="btn btn-primary" onclick="startBluetoothBroadcast()">Start Bluetooth Broadcast</button>
+                        <button id="stopBroadcastBtn" class="btn btn-danger" onclick="stopBluetoothBroadcast()" style="display: none;">Stop Broadcast</button>
+                </div>
+                <div id="broadcastStatus" class="broadcast-status">
+                    <!-- Broadcast status will be displayed here -->
+                </div>
+            </div>
+
+                <h2>Filters</h2>
+                <div class="filter-section">
+                    <div class="filter-group">
+                        <label for="attendanceUnitSelect">Unit</label>
+                        <select id="attendanceUnitSelect" onchange="filterAttendance()">
+                            <option value="">All Units</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="attendanceDateFilter">Date</label>
+                        <input type="date" id="attendanceDateFilter" onchange="filterAttendance()">
+                    </div>
+                    <div class="filter-group">
+                        <label for="attendanceStatusFilter">Status</label>
+                        <select id="attendanceStatusFilter" onchange="filterAttendance()">
+                            <option value="">All Status</option>
+                            <option value="good">Good Standing</option>
+                            <option value="warning">At Risk</option>
+                        </select>
+                </div>
+                    <div class="filter-actions">
+                        <button class="btn btn-primary" onclick="filterAttendance()">Apply Filters</button>
+                        <button class="btn btn-secondary" onclick="resetFilters()">Reset</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-content">
+                <h2>Attendance Overview</h2>
+                <div class="attendance-summary">
+                    <div class="summary-card">
+                        <h3>Total Students</h3>
+                        <div class="value" id="totalStudents">0</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>Average Attendance</h3>
+                        <div class="value" id="averageAttendance">0%</div>
+                    </div>
+                    <div class="summary-card">
+                        <h3>At Risk Students</h3>
+                        <div class="value" id="atRiskStudents">0</div>
+                </div>
+                    <div class="summary-card">
+                        <h3>Active Units</h3>
+                        <div class="value" id="activeUnits">0</div>
+                    </div>
+                </div>
+
+                <h2>Attendance Records</h2>
+                <table class="attendance-table">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                            <th>Overall Attendance</th>
+                            <th>Units Enrolled</th>
+                            <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceList">
+                        <tr>
+                            <td colspan="5" class="no-data">Loading attendance records...</td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        <!-- Attendance Details Modal--> 
+        <div id="attendanceModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2 id="studentInfo"></h2>
+                <table class="attendance-table">
+                    <thead>
+                        <tr>
+                            <th>Unit Code</th>
+                            <th>Classes Attended</th>
+                            <th>Total Classes</th>
+                            <th>Percentage</th>
+                            <th>Status</th>
+                            <th>Last Attendance</th>
+                            <th>Type</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceDetailsList">
+                    </tbody>
+                </table>
+        </div>
+    </div> 
+
+        <!-- Manual Attendance Modal -->
+        <div id="manualAttendanceModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeManualAttendanceModal()">&times;</span>
+                <h2>Mark Manual Attendance</h2>
+                <div class="form-group">
+                    <label for="manualUnitSelect">Select Unit:</label>
+                    <select id="manualUnitSelect" required>
+                        <option value="">Select a unit...</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="admissionNumber">Student Admission Number:</label>
+                    <input type="text" id="admissionNumber" required>
+                </div>
+                <button class="btn btn-primary" onclick="markManualAttendance()">Mark Attendance</button>
+                <div id="manualAttendanceStatus" class="status-message"></div>
+            </div>
+        </div>
+
+        <!-- Add Unit Modal -->
+        <div id="addUnitModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeAddUnitModal()">&times;</span>
+                <h2>Add New Unit</h2>
+                <form id="addUnitForm">
+                    <div class="form-group">
+                        <label for="unitCode">Unit Code:</label>
+                        <input type="text" id="unitCode" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="unitName">Unit Name:</label>
+                        <input type="text" id="unitName" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Add Unit</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Units List -->
+        <div id="unitsList" class="units-list">
+            <!-- Units will be displayed here -->
+        </div>
+
+        <!-- Add Profile Modal 
+        <div id="profileModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeProfileModal()">&times;</span>
+                <h2>Edit Profile</h2>
+                <form id="profileForm">
+                    <div class="form-group">
+                        <label for="fullName">Full Name:</label>
+                        <input type="text" id="fullName" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email:</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Phone Number:</label>
+                        <input type="tel" id="phone">
+                    </div>
+                    <div class="form-group">
+                        <label for="department">Department:</label>
+                        <input type="text" id="department">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Profile</button>
+                    <div id="profileStatus" class="status-message"></div>
+                </form>
+            </div>
+        </div>
+    </div>    -->
+
+    <style>
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.4);
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 1200px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: black;
+        }
+
+        #studentInfo {
+            margin-bottom: 20px;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+
+        /* Add new styles for improved organization */
+        .dashboard-container {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .sidebar {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .main-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .filter-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .filter-group {
+            margin-bottom: 15px;
+        }
+
+        .filter-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #495057;
+        }
+
+        .filter-group select,
+        .filter-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .attendance-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .summary-card {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .summary-card h3 {
+            margin: 0;
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .summary-card .value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #212529;
+            margin: 10px 0;
+        }
+
+        .attendance-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        .attendance-table th,
+        .attendance-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .attendance-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .attendance-table tr:hover {
+            background: #f8f9fa;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-good {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-primary {
+            background: #007bff;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0056b3;
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #545b62;
+        }
+
+        .no-data {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+    </style>
+
+    <script>
+        // API configuration
+        const API_BASE_URL = 'http://localhost:8000';  // Updated with your computer's IP address
+
+        // Token refresh mechanism
+        function isTokenExpired(token) {
+            if (!token) return true;
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            const { exp } = JSON.parse(jsonPayload);
+            return exp * 1000 < Date.now();
+        }
+
+        async function refreshTokenIfNeeded() {
+            const token = localStorage.getItem('token');
+            if (isTokenExpired(token)) {
+                try {
+                    const response = await fetch(`${API_BASE_URL}/token/refresh`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        localStorage.setItem('token', data.access_token);
+                        return data.access_token;
+                    } else {
+                        throw new Error('Token refresh failed');
+                    }
+                } catch (error) {
+                    console.error('Token refresh failed:', error);
+                    window.location.href = 'login.html';
+                    return null;
+                }
+            }
+            return token;
+        }
+
+        // Set up periodic token refresh
+        setInterval(refreshTokenIfNeeded, 5 * 60 * 1000); // Check every 5 minutes
+
+        // Check authentication
+        const token = localStorage.getItem('token');
+        let currentUserId; // Add variable to store current user's ID
+
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+
+        // Get user info
+        fetch(`${API_BASE_URL}/users/me`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch user info');
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('User data:', data); // Debug log
+            if (data.role !== 'lecturer' && data.role !== 'LECTURER') {
+                alert('Access denied. Only lecturers can access this page.');
+                window.location.href = 'login.html';
+                return;
+            }
+            document.getElementById('userName').textContent = data.full_name;
+            currentUserId = data.id; // Store the user's ID
+            // Load data only after confirming user is a lecturer
+            loadUnits();
+            loadAttendance();
+        })
+        .catch(error => {
+            console.error('Error fetching user info:', error);
+            alert('Failed to verify user role. Please try logging in again.');
+            window.location.href = 'login.html';
+        });
+
+        // Load units
+        async function loadUnits() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/units`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                const units = await response.json();
+                    
+                    // Update unit selects if they exist
+            const unitSelect = document.getElementById('unitSelect');
+                    const manualUnitSelect = document.getElementById('manualUnitSelect');
+            const attendanceUnitSelect = document.getElementById('attendanceUnitSelect');
+                    const unitsList = document.getElementById('unitsList');
+            
+                    if (unitSelect) {
+            unitSelect.innerHTML = '<option value="">Select a unit</option>';
+                        units.forEach(unit => {
+                            unitSelect.innerHTML += `<option value="${unit.id}">${unit.code} - ${unit.name}</option>`;
+                        });
+                    }
+                    
+                    if (manualUnitSelect) {
+                        manualUnitSelect.innerHTML = '<option value="">Select a unit</option>';
+            units.forEach(unit => {
+                            manualUnitSelect.innerHTML += `<option value="${unit.id}">${unit.code} - ${unit.name}</option>`;
+                        });
+                    }
+                    
+                    if (attendanceUnitSelect) {
+                        attendanceUnitSelect.innerHTML = '<option value="">All Units</option>';
+                        units.forEach(unit => {
+                            attendanceUnitSelect.innerHTML += `<option value="${unit.id}">${unit.code} - ${unit.name}</option>`;
+                        });
+                    }
+                    
+                    if (unitsList) {
+                        unitsList.innerHTML = '';
+                        units.forEach(unit => {
+                            unitsList.innerHTML += `
+                                <div class="unit-item">
+                                    <span>${unit.code} - ${unit.name}</span>
+                                    <button onclick="viewAttendance(${unit.id})">View Attendance</button>
+                                </div>
+                            `;
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading units:', error);
+            }
+        }
+
+        // Replace QR code functions with Bluetooth functions
+        let currentBeaconId = null;
+        let broadcastInterval = null;
+        let advertisingDevice = null;
+
+        async function startBluetoothBroadcast() {
+            const unitId = document.getElementById('unitSelect').value;
+            if (!unitId) {
+                alert('Please select a unit');
+                return;
+            }
+
+            try {
+                const token = await refreshTokenIfNeeded();
+                if (!token) {
+                    throw new Error('Authentication failed');
+                }
+
+                // Start the broadcast on the server
+                const response = await fetch(`${API_BASE_URL}/bluetooth/start-broadcast`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        unit_id: parseInt(unitId)
+                    })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to start broadcast');
+                }
+
+                const data = await response.json();
+                currentBeaconId = data.beacon_id;
+                
+                // Update UI
+                document.getElementById('startBroadcastBtn').style.display = 'none';
+                document.getElementById('stopBroadcastBtn').style.display = 'block';
+                document.getElementById('broadcastStatus').innerHTML = `
+                    <div class="status-active">
+                        <p>Broadcasting for ${data.unit_code}</p>
+                        <p>Beacon ID: ${data.beacon_id}</p>
+                        <p>Status: Active</p>
+                    </div>
+                `;
+
+                // Start periodic status check
+                broadcastInterval = setInterval(checkBroadcastStatus, 30000); // Check every 30 seconds
+
+            } catch (error) {
+                console.error('Error starting broadcast:', error);
+                alert('Failed to start Bluetooth broadcast: ' + error.message);
+            }
+        }
+
+        async function stopBluetoothBroadcast() {
+            try {
+                const token = await refreshTokenIfNeeded();
+                if (!token) {
+                    throw new Error('Authentication failed');
+                }
+
+                // Stop the broadcast on the server
+                const response = await fetch(`${API_BASE_URL}/bluetooth/stop-broadcast`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || 'Failed to stop broadcast');
+                }
+
+                // Clear interval and reset UI
+            if (broadcastInterval) {
+                clearInterval(broadcastInterval);
+                broadcastInterval = null;
+            }
+            
+            currentBeaconId = null;
+            document.getElementById('startBroadcastBtn').style.display = 'block';
+            document.getElementById('stopBroadcastBtn').style.display = 'none';
+            document.getElementById('broadcastStatus').innerHTML = '';
+                
+                // Refresh attendance records
+                loadAttendance();
+            } catch (error) {
+                console.error('Error stopping broadcast:', error);
+                alert('Failed to stop Bluetooth broadcast: ' + error.message);
+            }
+        }
+
+        async function checkBroadcastStatus() {
+            if (!currentBeaconId) return;
+
+            try {
+                const token = await refreshTokenIfNeeded();
+                if (!token) {
+                    throw new Error('Authentication failed');
+                }
+
+                const response = await fetch(`${API_BASE_URL}/health`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to check broadcast status');
+                }
+
+                const data = await response.json();
+                const statusDiv = document.getElementById('broadcastStatus');
+                
+                if (data.status === 'healthy' && data.metrics.bluetooth_scanner === 'running') {
+                    statusDiv.innerHTML = `
+                        <div class="status-active">
+                            <p>Broadcast is active</p>
+                            <p>Detected devices: ${data.metrics.detected_devices}</p>
+                            <p>Uptime: ${formatUptime(data.metrics.uptime)}</p>
+                        </div>
+                    `;
+                } else {
+                    statusDiv.innerHTML = `
+                        <div class="status-error">
+                            <p>Broadcast is not active</p>
+                            <p>Please restart the broadcast</p>
+                        </div>
+                    `;
+                    stopBluetoothBroadcast();
+                }
+            } catch (error) {
+                console.error('Error checking broadcast status:', error);
+            }
+        }
+
+        function formatUptime(uptime) {
+            if (!uptime) return 'N/A';
+            const seconds = uptime.total_seconds();
+            const minutes = Math.floor(seconds / 60);
+            const hours = Math.floor(minutes / 60);
+            return `${hours}h ${minutes % 60}m ${Math.floor(seconds % 60)}s`;
+        }
+
+        // Load attendance records
+        async function loadAttendance(unitId = null) {
+            try {
+                const token = localStorage.getItem('token');
+                if (!token) {
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+            let url = `${API_BASE_URL}/attendance/lecturer`;
+            const params = new URLSearchParams();
+            
+                if (unitId) {
+                    params.append('unit_id', unitId);
+                }
+                
+                const dateFilter = document.getElementById('attendanceDateFilter');
+                const statusFilter = document.getElementById('attendanceStatusFilter');
+                
+                if (dateFilter && dateFilter.value) {
+                    params.append('date', dateFilter.value);
+                }
+            
+            if (params.toString()) {
+                url += `?${params.toString()}`;
+            }
+
+                const response = await fetch(url, {
+                headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const attendance = await response.json();
+                
+                if (!attendance || attendance.length === 0) {
+                    document.getElementById('attendanceList').innerHTML = `
+                        <tr>
+                            <td colspan="5" class="no-data">No attendance records found</td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                displayAttendance(attendance);
+            } catch (error) {
+                console.error('Error loading attendance:', error);
+                document.getElementById('attendanceList').innerHTML = `
+                    <tr>
+                        <td colspan="5" class="error-message">
+                            Error loading attendance records: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Display attendance function
+        function displayAttendance(attendance) {
+                const attendanceList = document.getElementById('attendanceList');
+                attendanceList.innerHTML = '';
+
+            if (!attendance || attendance.length === 0) {
+                attendanceList.innerHTML = `
+                    <tr>
+                        <td colspan="5" class="no-data">No attendance records found</td>
+                    </tr>
+                `;
+                return;
+            }
+
+            // Group attendance by student
+            const studentAttendance = {};
+            attendance.forEach(record => {
+                if (!record.attendance_records || record.attendance_records.length === 0) return;
+
+                record.attendance_records.forEach(attendanceRecord => {
+                    const studentId = attendanceRecord.user_id;
+                    if (!studentAttendance[studentId]) {
+                        studentAttendance[studentId] = {
+                            student_name: attendanceRecord.user ? 
+                                (attendanceRecord.user.full_name || attendanceRecord.user.username) : 
+                                'Unknown User',
+                            total_attended: 0,
+                            total_classes: 0,
+                            units: new Set(),
+                            records: []
+                        };
+                    }
+                    
+                    studentAttendance[studentId].total_attended += attendanceRecord.attended_classes || 0;
+                    studentAttendance[studentId].total_classes += attendanceRecord.total_classes || 12;
+                    studentAttendance[studentId].units.add(record.unit_code);
+                    studentAttendance[studentId].records.push({
+                        ...attendanceRecord,
+                        unit_code: record.unit_code
+                    });
+                });
+            });
+
+            // Update summary cards
+            const totalStudents = Object.keys(studentAttendance).length;
+            let totalAttendance = 0;
+            let atRiskCount = 0;
+
+            Object.values(studentAttendance).forEach(student => {
+                const overallPercentage = (student.total_attended / student.total_classes) * 100;
+                totalAttendance += overallPercentage;
+                if (overallPercentage < 75) atRiskCount++;
+            });
+
+            document.getElementById('totalStudents').textContent = totalStudents;
+            document.getElementById('averageAttendance').textContent = 
+                totalStudents > 0 ? `${(totalAttendance / totalStudents).toFixed(1)}%` : '0%';
+            document.getElementById('atRiskStudents').textContent = atRiskCount;
+            document.getElementById('activeUnits').textContent = attendance.length;
+
+            // Display student rows
+            Object.values(studentAttendance).forEach(student => {
+                const overallPercentage = (student.total_attended / student.total_classes) * 100;
+                const status = overallPercentage >= 75 ? 'Good Standing' : 'At Risk';
+                const statusClass = overallPercentage >= 75 ? 'status-good' : 'status-warning';
+                
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${student.student_name}</td>
+                    <td>${overallPercentage.toFixed(1)}%</td>
+                    <td>${student.units.size}</td>
+                    <td><span class="status-badge ${statusClass}">${status}</span></td>
+                    <td>
+                        <button class="btn btn-primary" onclick="viewAttendanceDetails('${student.student_name}', ${JSON.stringify(student.records)})">View Details</button>
+                    </td>
+                `;
+                attendanceList.appendChild(row);
+            });
+        }
+
+        // View attendance details in modal
+        function viewAttendanceDetails(studentName, records) {
+            const modal = document.getElementById('attendanceModal');
+            const studentInfo = document.getElementById('studentInfo');
+            const detailsList = document.getElementById('attendanceDetailsList');
+            
+            // Display student info
+            studentInfo.textContent = studentName;
+            
+            // Display detailed records
+            detailsList.innerHTML = '';
+                records.forEach(record => {
+                const status = record.percentage >= 75 ? 'Good Standing' : 'At Risk';
+                const statusClass = record.percentage >= 75 ? 'status-good' : 'status-warning';
+                
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${record.unit_code}</td>
+                    <td>${record.attended_classes}</td>
+                    <td>${record.total_classes}</td>
+                    <td>${record.percentage.toFixed(1)}%</td>
+                    <td><span class="status-badge ${statusClass}">${status}</span></td>
+                        <td>${new Date(record.marked_at).toLocaleString()}</td>
+                        <td>${record.attendance_type}</td>
+                `;
+                detailsList.appendChild(row);
+            });
+            
+            modal.style.display = "block";
+        }
+
+        // View attendance for a specific unit
+        function viewAttendance(unitId) {
+            // Load attendance directly for the selected unit
+            loadAttendance(unitId);
+        }
+
+        // Close modal when clicking the X or outside the modal
+        document.querySelector('.close').onclick = function() {
+            document.getElementById('attendanceModal').style.display = "none";
+        }
+
+        window.onclick = function(event) {
+            const manualModal = document.getElementById('manualAttendanceModal');
+            const addUnitModal = document.getElementById('addUnitModal');
+            const attendanceModal = document.getElementById('attendanceModal');
+            const profileModal = document.getElementById('profileModal');
+            
+            if (event.target == manualModal) {
+                manualModal.style.display = "none";
+            }
+            if (event.target == addUnitModal) {
+                closeAddUnitModal();
+            }
+            if (event.target == attendanceModal) {
+                attendanceModal.style.display = "none";
+            }
+            if (event.target == profileModal) {
+                closeProfileModal();
+            }
+        }
+
+        // Filter attendance records
+        async function filterAttendance(unitId = null) {
+            try {
+                const token = await refreshTokenIfNeeded();
+                if (!token) {
+                    throw new Error('Authentication failed');
+                }
+
+                let url = `${API_BASE_URL}/attendance/lecturer`;
+                const params = new URLSearchParams();
+                
+                if (unitId) {
+                    params.append('unit_id', unitId);
+                }
+                
+                const dateFilter = document.getElementById('attendanceDateFilter');
+                const statusFilter = document.getElementById('attendanceStatusFilter');
+                
+                if (dateFilter && dateFilter.value) {
+                    params.append('date', dateFilter.value);
+                }
+                
+                if (params.toString()) {
+                    url += `?${params.toString()}`;
+                }
+
+                const response = await fetch(url, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const attendance = await response.json();
+                
+                // Apply status filter if selected
+                if (statusFilter && statusFilter.value) {
+                    attendance.forEach(record => {
+                        if (record.attendance_records) {
+                            record.attendance_records = record.attendance_records.filter(ar => {
+                                const percentage = ar.percentage || 0;
+                                return statusFilter.value === 'good' ? percentage >= 75 : percentage < 75;
+                            });
+                        }
+                    });
+                }
+                
+                displayAttendance(attendance);
+            } catch (error) {
+                console.error('Error filtering attendance:', error);
+                document.getElementById('attendanceList').innerHTML = `
+                    <tr>
+                        <td colspan="5" class="error-message">
+                            Error loading attendance records: ${error.message}
+                        </td>
+                    </tr>
+                `;
+            }
+        }
+
+        // Delete attendance record
+        function deleteAttendance(attendanceId) {
+            if (confirm('Are you sure you want to delete this attendance record?')) {
+                fetch(`${API_BASE_URL}/attendance/${attendanceId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        filterAttendance();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error deleting attendance:', error);
+                });
+            }
+        }
+
+        // Add unit form submission
+        document.getElementById('addUnitForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const unitData = {
+                code: document.getElementById('unitCode').value,
+                name: document.getElementById('unitName').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/units`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(unitData)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.detail || JSON.stringify(errorData));
+                }
+
+                const data = await response.json();
+                await loadUnits(); // Reload the units list
+                this.reset(); // Clear the form
+                alert('Unit added successfully!');
+            } catch (error) {
+                console.error('Error adding unit:', error);
+                alert(error.message || 'Failed to add unit. Please try again.');
+            }
+        });
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('token');
+            window.location.href = 'login.html';
+        }
+
+        // Add these functions for manual attendance
+        function showManualAttendanceModal() {
+            const modal = document.getElementById('manualAttendanceModal');
+            modal.style.display = "block";
+            loadUnitsForManualAttendance();
+        }
+
+        function closeManualAttendanceModal() {
+            const modal = document.getElementById('manualAttendanceModal');
+            modal.style.display = "none";
+        }
+
+        function loadUnitsForManualAttendance() {
+            const unitSelect = document.getElementById('manualUnitSelect');
+            unitSelect.innerHTML = '<option value="">Select a unit...</option>';
+            
+            fetch(`${API_BASE_URL}/units`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    }
+            })
+            .then(response => response.json())
+            .then(units => {
+                    units.forEach(unit => {
+                    const option = document.createElement('option');
+                    option.value = unit.id;
+                    option.textContent = `${unit.code} - ${unit.name}`;
+                    unitSelect.appendChild(option);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading units:', error);
+                document.getElementById('manualAttendanceStatus').innerHTML = 
+                    '<div class="error">Failed to load units</div>';
+            });
+        }
+
+        function markManualAttendance() {
+            const unitId = document.getElementById('manualUnitSelect').value;
+            const admissionNumber = document.getElementById('admissionNumber').value;
+            const statusDiv = document.getElementById('manualAttendanceStatus');
+            
+            if (!unitId || !admissionNumber) {
+                statusDiv.innerHTML = '<div class="error">Please fill in all fields</div>';
+                return;
+            }
+            
+            fetch(`${API_BASE_URL}/attendance/manual`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    },
+                    body: JSON.stringify({
+                    unit_id: unitId,
+                        admission_number: admissionNumber
+                    })
+            })
+            .then(response => response.json())
+            .then(data => {
+                statusDiv.innerHTML = '<div class="success">Attendance marked successfully!</div>';
+                    document.getElementById('admissionNumber').value = '';
+                    loadAttendance(); // Refresh attendance list
+            })
+            .catch(error => {
+                console.error('Error marking attendance:', error);
+                statusDiv.innerHTML = '<div class="error">Failed to mark attendance</div>';
+            });
+        }
+
+        // Update the showAddUnitModal function
+        function showAddUnitModal() {
+            const modal = document.getElementById('addUnitModal');
+            modal.style.display = "block";
+        }
+
+        // Add function to close add unit modal
+        function closeAddUnitModal() {
+            const modal = document.getElementById('addUnitModal');
+            modal.style.display = "none";
+        }
+
+        // Add reset filters function
+        function resetFilters() {
+            document.getElementById('attendanceUnitSelect').value = '';
+            document.getElementById('attendanceDateFilter').value = '';
+            document.getElementById('attendanceStatusFilter').value = '';
+            filterAttendance();
+        }
+
+        // Profile management functions
+        function showProfileModal() {
+            const modal = document.getElementById('profileModal');
+            const token = localStorage.getItem('token');
+            
+            // Fetch current profile data
+            fetch(`${API_BASE_URL}/users/me`, {
+                    headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('fullName').value = data.full_name || '';
+                document.getElementById('email').value = data.email || '';
+                document.getElementById('phone').value = data.phone || '';
+                document.getElementById('department').value = data.department || '';
+                modal.style.display = "block";
+            })
+            .catch(error => {
+                console.error('Error fetching profile:', error);
+                alert('Failed to load profile data');
+            });
+        }
+
+        function closeProfileModal() {
+            const modal = document.getElementById('profileModal');
+            modal.style.display = "none";
+        }
+
+        // Add profile form submission handler
+        document.getElementById('profileForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const token = localStorage.getItem('token');
+            const profileData = {
+                full_name: document.getElementById('fullName').value,
+                email: document.getElementById('email').value,
+                phone: document.getElementById('phone').value,
+                department: document.getElementById('department').value
+            };
+
+            fetch(`${API_BASE_URL}/users/me`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                credentials: 'include',
+                body: JSON.stringify(profileData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(err => {
+                        throw new Error(err.detail || 'Failed to update profile');
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('profileStatus').innerHTML = 
+                    '<div class="success">Profile updated successfully!</div>';
+                setTimeout(() => {
+                    closeProfileModal();
+                    // Refresh user info display
+                    document.getElementById('userName').textContent = data.full_name || data.username;
+                }, 2000);
+            })
+            .catch(error => {
+                console.error('Error updating profile:', error);
+                document.getElementById('profileStatus').innerHTML = 
+                    `<div class="error">Failed to update profile: ${error.message}</div>`;
+            });
+        });
+    </script>
+</body>
+</html> 

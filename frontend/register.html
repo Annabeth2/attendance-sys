@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register - Attendance System</title>
+    <link rel="stylesheet" href="static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <div class="form-container">
+            <h1>Register</h1>
+            <form id="registerForm" class="form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" required>
+                    <span class="error-message" id="emailError"></span>
+                </div>
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                    <span class="error-message" id="usernameError"></span>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                    <span class="error-message" id="passwordError"></span>
+                </div>
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                    <span class="error-message" id="confirmPasswordError"></span>
+                </div>
+                <div class="form-group">
+                    <label for="role">Role:</label>
+                    <select id="role" required onchange="toggleStudentFields()">
+                        <option value="student">Student</option>
+                        <option value="lecturer">Lecturer</option>
+                    </select>
+                </div>
+                <div class="form-group" id="admissionNumberGroup" style="display: block;">
+                    <label for="admissionNumber">Admission Number:</label>
+                    <input type="text" id="admissionNumber" placeholder="xxxx/xx/xxxx/xx/xx" pattern="^\d{4}/\d{2}/\d{4}/\d{2}/\d{2}$">
+                    <small class="form-text text-muted">Required for students. Format: xxxx/xx/xxxx/xx/xx (e.g., 2023/01/1234/01/01)</small>
+                    <span class="error-message" id="admissionNumberError"></span>
+                </div>
+                <div class="form-group" id="bluetoothGroup" style="display: block;">
+                    <label for="bluetoothAddress">Bluetooth MAC Address:</label>
+                    <input type="text" id="bluetoothAddress" placeholder="XX:XX:XX:XX:XX:XX" pattern="([0-9A-Fa-f]{2}[:-]){5}[0-9A-Fa-f]{2}">
+                    <small class="form-text text-muted">Required for students. Format: XX:XX:XX:XX:XX:XX (e.g., 00:11:22:33:44:55)</small>
+                    <span class="error-message" id="bluetoothError"></span>
+                </div>
+                <button type="submit" class="btn-primary">Register</button>
+            </form>
+            <p class="form-footer">
+                Already have an account? <a href="login.html">Login here</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        function toggleStudentFields() {
+            const role = document.getElementById('role').value;
+            const bluetoothGroup = document.getElementById('bluetoothGroup');
+            const admissionNumberGroup = document.getElementById('admissionNumberGroup');
+            const bluetoothAddress = document.getElementById('bluetoothAddress');
+            const admissionNumber = document.getElementById('admissionNumber');
+            
+            if (role === 'student') {
+                bluetoothGroup.style.display = 'block';
+                admissionNumberGroup.style.display = 'block';
+                bluetoothAddress.required = true;
+                admissionNumber.required = true;
+            } else {
+                bluetoothGroup.style.display = 'none';
+                admissionNumberGroup.style.display = 'none';
+                bluetoothAddress.required = false;
+                admissionNumber.required = false;
+            }
+        }
+
+        function validateMacAddress(mac) {
+            const macRegex = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+            return macRegex.test(mac);
+        }
+
+        function validateAdmissionNumber(admission) {
+            const admissionRegex = /^\d{4}\/\d{2}\/\d{4}\/\d{2}\/\d{2}$/;
+            return admissionRegex.test(admission);
+        }
+
+        document.getElementById('registerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Reset error messages
+            document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+            
+            const email = document.getElementById('email').value;
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const role = document.getElementById('role').value;
+            const bluetoothAddress = document.getElementById('bluetoothAddress').value;
+            const admissionNumber = document.getElementById('admissionNumber').value;
+            
+            // Validate password match
+            if (password !== confirmPassword) {
+                document.getElementById('confirmPasswordError').textContent = 'Passwords do not match';
+                return;
+            }
+            
+            if (role === 'student') {
+                if (!bluetoothAddress) {
+                    document.getElementById('bluetoothError').textContent = 'Bluetooth MAC address is required for students';
+                    return;
+                }
+                if (!validateMacAddress(bluetoothAddress)) {
+                    document.getElementById('bluetoothError').textContent = 'Invalid MAC address format. Use XX:XX:XX:XX:XX:XX';
+                    return;
+                }
+                if (!admissionNumber) {
+                    document.getElementById('admissionNumberError').textContent = 'Admission number is required for students';
+                    return;
+                }
+                if (!validateAdmissionNumber(admissionNumber)) {
+                    document.getElementById('admissionNumberError').textContent = 'Invalid admission number format. Use xxxx/xx/xxxx/xx/xx';
+                    return;
+                }
+            }
+            
+            const userData = {
+                email,
+                username,
+                password,
+                role: role.toUpperCase(),
+                bluetooth_address: bluetoothAddress,
+                admission_number: admissionNumber
+            };
+            
+            try {
+                const response = await fetch('http://localhost:8000/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(userData)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    // Registration successful, redirect to login
+                    window.location.href = 'login.html';
+                } else {
+                    // Display error message
+                    let errorMessage = data.detail;
+                    let errorField = 'passwordError'; // Default error field
+                    
+                    if (errorMessage.includes('email')) {
+                        errorField = 'emailError';
+                    } else if (errorMessage.includes('username')) {
+                        errorField = 'usernameError';
+                    } else if (errorMessage.includes('admission')) {
+                        errorField = 'admissionNumberError';
+                    } else if (errorMessage.includes('bluetooth')) {
+                        errorField = 'bluetoothError';
+                    }
+                    
+                    document.getElementById(errorField).textContent = errorMessage;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('passwordError').textContent = 'An error occurred. Please try again.';
+            }
+        });
+    </script>
+</body>
+</html> 
